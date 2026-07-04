@@ -1,0 +1,158 @@
+{
+  "info": {
+    "name": "Intelligent Vendor Routing Platform",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [{ "key": "baseUrl", "value": "http://localhost:5000" }],
+  "item": [
+    {
+      "name": "Health",
+      "request": { "method": "GET", "url": "{{baseUrl}}/health" }
+    },
+    {
+      "name": "Vendors - List",
+      "request": { "method": "GET", "url": "{{baseUrl}}/vendors" }
+    },
+    {
+      "name": "Vendors - Create",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/vendors",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Vendor F\",\n  \"priority\": 3,\n  \"weight\": 3,\n  \"costPerRequest\": 0.08,\n  \"timeoutMs\": 2000,\n  \"rateLimitPerMinute\": 50,\n  \"supportedFeatures\": [\"OCR\"]\n}"
+        }
+      }
+    },
+    {
+      "name": "Vendors - Update",
+      "request": {
+        "method": "PUT",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/vendors/:id",
+        "body": { "mode": "raw", "raw": "{\n  \"priority\": 5\n}" }
+      }
+    },
+    {
+      "name": "Vendors - Delete",
+      "request": { "method": "DELETE", "url": "{{baseUrl}}/vendors/:id" }
+    },
+    {
+      "name": "Route Request - PAN_VERIFICATION",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/route",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"capability\": \"PAN_VERIFICATION\",\n  \"payload\": { \"pan\": \"ABCDE1234F\", \"name\": \"Rahul Sharma\" },\n  \"requirements\": {\n    \"maxLatencyMs\": 2000,\n    \"preferLowCost\": true\n  }\n}"
+        }
+      }
+    },
+    {
+      "name": "Route Request - OCR",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/route",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"capability\": \"OCR\",\n  \"strategy\": \"lowestLatency\",\n  \"payload\": { \"documentUrl\": \"https://example.com/invoice.jpg\", \"documentType\": \"INVOICE\" }\n}"
+        }
+      }
+    },
+    {
+      "name": "Route Request - SMS",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/route",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"capability\": \"SMS\",\n  \"strategy\": \"roundRobin\",\n  \"payload\": { \"to\": \"+919876543210\", \"message\": \"Your OTP is 482913\" }\n}"
+        }
+      }
+    },
+    {
+      "name": "Route Request - PAYMENT_PROCESSING",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/route",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"capability\": \"PAYMENT_PROCESSING\",\n  \"strategy\": \"healthBased\",\n  \"payload\": { \"amount\": 999.0, \"currency\": \"INR\", \"cardLast4\": \"4242\" }\n}"
+        }
+      }
+    },
+    {
+      "name": "Route Request - DOCUMENT_VALIDATION",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/route",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"capability\": \"DOCUMENT_VALIDATION\",\n  \"strategy\": \"featureBased\",\n  \"payload\": { \"documentType\": \"CONTRACT\", \"documentUrl\": \"https://example.com/contract.pdf\" }\n}"
+        }
+      }
+    },
+    {
+      "name": "Route Request (explicit strategy + conditions)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/route",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"capability\": \"PAN_VERIFICATION\",\n  \"strategy\": \"weighted\",\n  \"payload\": { \"pan\": \"ABCDE1234F\", \"name\": \"Rahul Sharma\" },\n  \"conditions\": [\n    { \"metric\": \"latency\", \"operator\": \">\", \"value\": 2000, \"vendor\": \"Vendor C\" }\n  ]\n}"
+        }
+      }
+    },
+    {
+      "name": "Vendor Metrics",
+      "request": { "method": "GET", "url": "{{baseUrl}}/vendor-metrics" }
+    },
+    {
+      "name": "Routing Logs",
+      "request": { "method": "GET", "url": "{{baseUrl}}/routing-logs?page=1&limit=20" }
+    },
+    {
+      "name": "AI Rule Generator",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/ai-rule-generator",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"text\": \"Use Vendor A for 70% traffic, Vendor B for 30%, but switch to Vendor C if latency crosses 2 seconds or error rate is above 5%.\"\n}"
+        }
+      }
+    },
+    {
+      "name": "Routing Configs - Save & Apply",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/routing-configs",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"sourceText\": \"Use Vendor A for 70% traffic, Vendor B for 30%.\",\n  \"strategy\": \"weighted\",\n  \"vendorOrder\": [\"Vendor A\", \"Vendor B\"],\n  \"weights\": [\n    { \"vendor\": \"Vendor A\", \"percentage\": 70 },\n    { \"vendor\": \"Vendor B\", \"percentage\": 30 }\n  ],\n  \"conditions\": []\n}"
+        }
+      }
+    },
+    {
+      "name": "Routing Configs - List",
+      "request": { "method": "GET", "url": "{{baseUrl}}/routing-configs" }
+    },
+    {
+      "name": "Strategy Recommendation (Agentic AI)",
+      "request": { "method": "GET", "url": "{{baseUrl}}/strategy-recommendation" }
+    },
+    {
+      "name": "Fallback Suggestions (Agentic AI)",
+      "request": { "method": "GET", "url": "{{baseUrl}}/fallback-suggestions" }
+    }
+  ]
+}

@@ -1,0 +1,234 @@
+================================================================================
+           INTELLIGENT VENDOR ROUTING PLATFORM - TEST & VALIDATION REPORT
+================================================================================
+Project: Assignment 2 - Build an Intelligent Vendor Routing Platform
+Date: July 2026
+System Status: ALL 49 AUTOMATED TESTS PASSING | SWAGGER API VALIDATED | UI LIVE
+
+--------------------------------------------------------------------------------
+SECTION 1: EXECUTIVE SUMMARY & REAL-LIFE RELEVANCE
+--------------------------------------------------------------------------------
+In modern fintech and digital banking (e.g., KYC onboarding, payment processing,
+document verification), relying on a single third-party vendor creates single
+points of failure, vendor lock-in, and unpredictable costs/latency. 
+
+This platform acts as an intelligent API Gateway. The client application calls
+one unified endpoint (/route) without knowing or caring which backend vendor
+(Vendor A, Vendor B, Vendor C) processes the request. The routing engine
+dynamically analyzes real-time health metrics, rate limits, cost per call,
+latency variance, and AI-generated rules to route traffic to the best vendor.
+
+--------------------------------------------------------------------------------
+SECTION 2: STEP-BY-STEP REAL-LIFE TESTING GUIDE
+--------------------------------------------------------------------------------
+You can validate the entire platform using three primary methods:
+1. Web Dashboard UI (http://localhost:5174)
+2. Interactive Swagger Docs (http://localhost:5000/api-docs)
+3. Automated Unit Test Suite (npm test inside server/)
+
+--- A. TESTING VIA WEB DASHBOARD (http://localhost:5174) ---
+
+Step 1: Open the Dashboard Home Page
+- Verify the "Active Routing Strategies" card displays all 8 implemented strategies
+  with active green status badges.
+- Check the "Recent Routing Logs" table: Notice that all transaction Request IDs
+  are now clean, professional hexadecimal badges (e.g., #c82f9d1a) derived from
+  standard RFC 4122 UUIDs. Hover over any ID to see the full 36-character UUID.
+
+Step 2: Interactive Route Testing ("Route Tester" Tab)
+- Select Capability: "PAN_VERIFICATION"
+- Enter Sample Payload:
+  {
+    "panNumber": "ABCDE1234F",
+    "name": "Rahul Sharma",
+    "customerId": "cust_101"
+  }
+- Strategy Override: Select "lowestCost" -> Click "Route Request".
+  * Observe the result: Notice how the engine selects Vendor A ($0.01/call) over
+    more expensive vendors and returns latency and reasoning.
+- Switch Strategy Override to "lowestLatency" -> Click "Route Request".
+  * Observe the result: Notice how the engine dynamically switches to the vendor
+    with the lowest real-time latency (e.g., Vendor B at 115ms).
+    {
+  "success": true,
+  "status": "SUCCESS",
+  "vendorUsed": "Vendor B",
+  "routingReason": "Lowest current latency (1899ms) among eligible vendors",
+  "latencyMs": 1899,
+  "cost": 0.08,
+  "response": {
+    "panStatus": "INVALID",
+    "nameMatch": true,
+    "pan": null
+  },
+  "requestId": "23cbc587-11a6-4193-9807-2efbd3717351",
+  "failoverHistory": [
+    {
+      "vendor": "Vendor C",
+      "reason": "Vendor does not support capability \"PAN_VERIFICATION\"",
+      "status": "skipped"
+    },
+    {
+      "vendor": "Vendor E",
+      "reason": "Vendor is down",
+      "status": "skipped"
+    },
+    {
+      "vendor": "Vendor A",
+      "reason": "Vendor timed out after 2000ms",
+      "latencyMs": 2000,
+      "status": "timeout"
+    },
+    {
+      "vendor": "Vendor B",
+      "reason": "Vendor processed the request successfully",
+      "latencyMs": 1899,
+      "status": "success"
+    }
+  ]
+}
+
+Step 3: Simulating Real-Life Failover ("Route Tester" Tab)
+- Select Capability: "OCR"
+- Why Failover happens in real life: A document verification provider might suffer
+  a network outage or exceed its rate limit during peak banking hours.
+- Notice in our seed data that Vendor E is marked disabled and Vendor A simulates
+  a network timeout (>2000ms).
+- When you route an OCR request with "failover" strategy, watch the engine log
+  the failover chain:
+  [Attempt 1] Vendor E -> SKIPPED (Vendor marked inactive)
+  [Attempt 2] Vendor A -> TIMEOUT (Simulated network timeout > 2000ms)
+  [Attempt 3] Vendor C -> SUCCESS (310ms latency)
+- The end user still receives a successful 200 OK response without experiencing
+  a system crash!
+
+Step 4: AI Rule Generator ("AI Rule Generator" Tab)
+- Type plain English instructions into the prompt box:
+  "Route all PAN verification requests with amount > 5000 using lowestLatency strategy, but if error rate exceeds 5%, switch to Vendor C."
+- Click "Generate Rule via AI".
+- Notice how Google Gemini converts your natural language into a structured JSON
+  abstract syntax tree (AST) with conditions and strategy mappings.
+
+--- B. TESTING VIA SWAGGER / OPENAPI UI (http://localhost:5000/api-docs) ---
+
+Step 1: Open http://localhost:5000/api-docs in your browser.
+Step 2: Expand the POST /route endpoint under the [Routing] tag.
+Step 3: Click "Try it out".
+Step 4: In the request body JSON, verify that the "strategy" field allows choosing
+        from the enum of all 8 strategies:
+        [priority, weighted, lowestLatency, lowestCost, failover, roundRobin, featureBased, healthBased]
+Step 5: Click "Execute".
+Step 6: Inspect the Server Response (200 OK):
+        Verify that the returned JSON contains:
+        - "success": true
+        - "requestId": standard UUID string (e.g., "3b241101-e2bb-4255-8caf-4136c566a962")
+        - "strategy": string matching your selection
+        - "routingReason": clear text explanation of why that vendor was chosen
+        - "failoverHistory": array detailing every vendor evaluated during the call.
+
+--- C. TESTING VIA AUTOMATED TEST SUITE (Terminal) ---
+
+Step 1: Open terminal in d:\signzy\server
+Step 2: Run command: npm test
+Step 3: Verify the output shows 100% pass rate across all 8 test suites:
+        PASS tests/api.test.js
+        PASS tests/strategyAdvisor.test.js
+        PASS tests/vendorCache.test.js
+        PASS tests/fallbackAdvisor.test.js
+        PASS tests/rateLimiter.test.js
+        PASS tests/strategies.test.js
+        PASS tests/aiRuleGenerator.test.js
+        PASS tests/capabilityResponses.test.js
+        -----------------------------------------
+        Test Suites: 8 passed, 8 total
+        Tests:       49 passed, 49 total
+
+--------------------------------------------------------------------------------
+SECTION 3: CORE VALIDATION ANSWERS (FOR ASSIGNMENT EVALUATION)
+--------------------------------------------------------------------------------
+
+Q1: How does the client remain agnostic of which vendor is selected?
+ANS: The platform exposes a single unified API endpoint (/route). The client
+     sends only the required "capability" (e.g., SMS, OCR) and generic payload.
+     The routing engine encapsulates vendor selection, payload transformation,
+     and vendor-specific authentication. The final response is normalized into
+     a standard JSON format so the client code never changes even if vendors
+     are added, removed, or swapped.
+
+Q2: How are all 8 routing strategies implemented and validated?
+ANS: 1. Priority: Sorts eligible vendors by ascending numerical priority score.
+     2. Weighted: Uses weighted random selection based on configured traffic percentage.
+     3. Lowest Latency: Evaluates real-time moving average latency signals.
+     4. Lowest Cost: Sorts eligible vendors by costPerRequest to optimize budget.
+     5. Failover: Iterates through fallback vendors sequentially upon errors/timeouts.
+     6. Round Robin: Distributes requests evenly across vendors using cyclic counters.
+     7. Feature Based: Filters vendors by matching required document/transaction types.
+     8. Health Based: Computes a composite health score ((1 - errorRate) * availability)
+        and routes traffic to the most reliable vendor.
+     All 8 are validated in unit tests (tests/strategies.test.js) and seeded logs.
+
+Q3: How does the system handle vendor timeouts, rate limits, and failures?
+ANS: - Rate Limiting: An in-memory sliding window rate limiter tracks vendor API
+       calls per minute. If a vendor reaches its limit, it is temporarily marked
+       unavailable and traffic routes to the next best vendor.
+     - Timeouts: Each vendor configuration has a defined timeoutMs. If an HTTP
+       call exceeds this threshold, the request is aborted and automatically
+       handed off to the failover chain.
+     - Circuit Breaking / Health: Vendors with repeated failures are marked
+       'degraded' or 'down', preventing black-hole traffic routing.
+
+Q4: How is request tracking and auditing handled?
+ANS: Every routing request generates a standard RFC 4122 UUID (e.g., c82f9d1a-...).
+     This UUID is stored in MongoDB along with the full payload, selected vendor,
+     evaluation reason, total latency, and complete failover history. In the
+     UI, IDs are displayed as clean hex badges (#c82f9d1a) with tooltip support
+     for full traceability without cluttering the screen.
+
+Q5: What is the purpose of the AI Rule Generator and Strategy Advisor?
+ANS: - AI Rule Generator: Allows business operators without coding skills to
+       input natural language policies (e.g., "Route VIP customers to Vendor A"),
+       which are compiled into executable JSON AST rules.
+     - Strategy Advisor: Continually analyzes vendor performance drift (e.g.,
+       sudden latency spikes or cost increases) and recommends strategy changes
+       to system administrators.
+
+Q6: What is the use of the "Save & Apply to Vendors" button on the AI Rule Generator tab?
+ANS: The "Save & Apply to Vendors" button bridges the gap between AI generation
+     and live backend execution:
+     1. Persists Rule in MongoDB: Saves the generated JSON routing rule into the
+        database (RoutingConfig collection) with isActive: true.
+     2. Modifies Live Vendor Database:
+        - If the rule specifies percentage splits, it automatically updates the
+          real 'weight' property of those vendors in MongoDB.
+        - If the rule specifies a failover order, it automatically updates the
+          'priority' scores of those vendors in MongoDB.
+     3. Instant Cache Invalidation: Flushes the server's in-memory vendor cache
+        so the next routing request instantly executes using the new policy!
+
+Q7: Does the platform route requests automatically without manually selecting a rule?
+ANS: YES! In real-life production API usage, external client applications calling
+     POST /route never manually select an AI rule from a dropdown menu.
+     - Automatic Production Behavior: When an API client calls /route with only
+       { "capability": "PAN", "payload": { ... } }, the backend routing engine
+       automatically queries MongoDB for the currently active policy (isActive: true),
+       and automatically adopts its strategy and ranking conditions!
+     - Why Route Tester has a dropdown: The dropdown on the Route Tester tab is
+       strictly a "Sandbox Override" tool for administrators to test draft rules
+       before making them active in production. By default, it is set to
+       "✨ Auto-Route using Active AI Policy (Default)".
+
+Q8: How does the dashboard receive real-time telemetry without server polling?
+ANS: To eliminate continuous HTTP polling and prevent unnecessary server load,
+     the system uses Unidirectional WebSocket Push architecture:
+     - Server-Side Socket Service (server/services/socketService.js): Attaches a
+       WebSocket server on /ws. When a routing decision is made (/route) or when
+       vendors are updated (CRUD), the server broadcasts lightweight push events
+       (LOG_UPDATE, TELEMETRY_REFRESH, VENDORS_UPDATE).
+     - Client Listener (client/src/services/socket.js): All frontend hooks
+       (useHealth, useMetrics, useLogs, AppContext) subscribe to these WebSocket
+       events. Data refreshes instantly ONLY when real backend events occur,
+       with zero continuous polling overhead!
+
+================================================================================
+                           END OF VALIDATION REPORT
+================================================================================

@@ -1,0 +1,57 @@
+[
+  {
+    "name": "Vendor A",
+    "priority": 1,
+    "weight": 70,
+    "costPerRequest": 1.50,
+    "timeoutMs": 2000,
+    "rateLimitPerMinute": 100,
+    "supportedFeatures": ["PAN_VERIFICATION", "OCR"],
+    "isActive": true,
+    "healthStatus": "healthy"
+  },
+  {
+    "name": "Vendor B",
+    "priority": 2,
+    "weight": 30,
+    "costPerRequest": 0.80,
+    "timeoutMs": 3000,
+    "rateLimitPerMinute": 50,
+    "supportedFeatures": ["PAN_VERIFICATION", "DOCUMENT_VALIDATION"],
+    "isActive": true,
+    "healthStatus": "healthy"
+  },
+  {
+    "name": "Vendor C",
+    "priority": 3,
+    "weight": 20,
+    "costPerRequest": 0.30,
+    "timeoutMs": 2500,
+    "rateLimitPerMinute": 200,
+    "supportedFeatures": ["OCR", "SMS"],
+    "isActive": true,
+    "healthStatus": "healthy"
+  },
+  {
+    "name": "Vendor D",
+    "priority": 4,
+    "weight": 15,
+    "costPerRequest": 2.00,
+    "timeoutMs": 1500,
+    "rateLimitPerMinute": 150,
+    "supportedFeatures": ["PAN_VERIFICATION", "PAYMENT_PROCESSING"],
+    "isActive": true,
+    "healthStatus": "healthy"
+  },
+  {
+    "name": "Vendor E",
+    "priority": 5,
+    "weight": 10,
+    "costPerRequest": 0.50,
+    "timeoutMs": 4000,
+    "rateLimitPerMinute": 30,
+    "supportedFeatures": ["DOCUMENT_VALIDATION", "SMS", "OCR"],
+    "isActive": true,
+    "healthStatus": "healthy"
+  }
+]

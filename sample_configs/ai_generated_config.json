@@ -1,0 +1,29 @@
+{
+  "sourceText": "Use Vendor A for 70% traffic, Vendor B for 30%, but switch to Vendor C if latency crosses 2 seconds or error rate is above 5%.",
+  "strategy": "weighted",
+  "vendorOrder": ["Vendor A", "Vendor B"],
+  "weights": [
+    { "vendor": "Vendor A", "percentage": 70 },
+    { "vendor": "Vendor B", "percentage": 30 }
+  ],
+  "conditions": [
+    {
+      "metric": "latency",
+      "operator": ">",
+      "value": 2000,
+      "unit": "ms",
+      "action": "switchTo",
+      "vendor": "Vendor C"
+    },
+    {
+      "metric": "errorRate",
+      "operator": ">",
+      "value": 5,
+      "unit": "%",
+      "action": "switchTo",
+      "vendor": "Vendor C"
+    }
+  ],
+  "isActive": true,
+  "capability": "PAN_VERIFICATION"
+}
